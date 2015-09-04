@@ -13,6 +13,12 @@
 #include <inttypes.h>
 #include <string.h>
 
+//MACROS
+
+//CONSTS
+const char version[] = "V1.0.0";
+
+//VARIABLES
 enum exit_codes
 {
 	X_SUCCESS = 0,
@@ -51,8 +57,10 @@ typedef struct files_t
 
 files_t array[17];
 
-
+// PROTOTYPES
 void closeFiles();
+
+//FUNCTION START
 
 /**
  * \brief exit function
@@ -79,6 +87,7 @@ void myexit(uint8_t exit_code)
 			break;
 		case X_FILERROR:
 			printf("%s has errors on line %lu, exiting!\r\n", charptr, current_line);
+			printf("==> %s ", readline);
 			break;
 		default:
 			break;
@@ -202,7 +211,6 @@ void closeFiles()
 	}
 }
 
-
 void handleData(char * data, char * origin_filename)
 {
 	char name[255];
@@ -255,8 +263,9 @@ void handleData(char * data, char * origin_filename)
 
 }
 
+
 int main(int argc, char * argv[]) {
-	puts("VIPSplitter, a VIPMeter file splitter\r\n");
+	printf ("VIPSplitter %s, a VIPMeter file splitter\r\n", version);
 	if (argc != 2)						// Wrong number of input arguments
 	{
 		charptr = argv[0];
