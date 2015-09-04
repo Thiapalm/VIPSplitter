@@ -49,7 +49,7 @@ typedef struct files_t
 	FILE * filename;
 } files_t;
 
-files_t array[16];
+files_t array[17];
 
 
 void closeFiles();
@@ -62,6 +62,7 @@ void closeFiles();
  */
 void myexit(uint8_t exit_code)
 {
+	puts("");
 	switch (exit_code)
 	{
 		case X_SUCCESS:
@@ -209,6 +210,15 @@ void handleData(char * data, char * origin_filename)
 	uint8_t name_number;
 
 	name_number = data[3] - '0';
+
+	if (name_number > 9)
+	{
+		name_number = (data[3] - 'A') + 10;
+		if (name_number > 15)
+		{
+			myexit(X_FILERROR);
+		}
+	}
 
 	strcpy(name, origin_filename);
 
