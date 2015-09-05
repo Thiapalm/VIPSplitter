@@ -39,6 +39,7 @@ typedef enum states
 } e_states;
 
 e_states main_state = STATE_INITIAL;
+uint8_t filenumber = 0;
 
 char header[255] = "";
 char readline[255] = "";
@@ -120,15 +121,24 @@ int stateChange(e_states new_state)
 	int result = 0;
 	switch (new_state) {
 		case STATE_COMMENT:
-			//main_state <= STATE_COMMENT ? main_state = STATE_COMMENT : result = 0;
+			// COMMENT - COMMENT
+			// INITIAL - COMMENT
+			// TODO: Adicionar DATA - COMMENT (criacao de novos arquivos)
 			if (main_state <= STATE_COMMENT)
 			{
 				main_state = STATE_COMMENT;
 				result = 1;
 			}
+			if (main_state == STATE_DATA)
+			{
+				main_state = STATE_COMMENT;
+				filenumber++;
+				closeFiles();
+				result = 1;
+			}
 			break;
 		case STATE_HEADER:
-			//main_state == STATE_COMMENT ? main_state = STATE_HEADER : result = 0;
+			// COMMENT - HEADER
 			if (main_state == STATE_COMMENT)
 			{
 				main_state = STATE_HEADER;
@@ -136,7 +146,8 @@ int stateChange(e_states new_state)
 			}
 			break;
 		case STATE_DATA:
-			//main_state == STATE_HEADER ? main_state = STATE_DATA : result = 0;
+			// DATA - DATA
+			// HEADER - DATA
 			if ((main_state == STATE_HEADER) || (main_state == STATE_DATA))
 			{
 				main_state = STATE_DATA;
@@ -144,8 +155,8 @@ int stateChange(e_states new_state)
 			}
 			break;
 		case STATE_INITIAL:
-			//main_state == STATE_HEADER ? main_state = STATE_DATA : result = 0;
-			if (main_state == STATE_INITIAL)
+			// INITIAL - INITIAL
+			if (main_state <= STATE_COMMENT)
 			{
 				main_state = STATE_INITIAL;
 				result = 1;
@@ -230,7 +241,7 @@ void handleData(char * data, char * origin_filename)
 
 	strcpy(name, origin_filename);
 
-	sprintf(temp, "_0x4%c.csv", data[3]);
+	sprintf(temp, "_0x4%c_%d.csv", data[3], filenumber);
 
 	char * ptstr;
 	ptstr = strstr(name, ".csv"); //find address of substring
@@ -289,7 +300,7 @@ int main(int argc, char * argv[]) {
 
 	puts("Please Wait, this may take a while. Working... ");
 
-	ch = fgetc(file);
+	ch = fgetc(file); 					// Start reading file
 	while (ch != EOF)
 	{
 		readline[index] = ch;
