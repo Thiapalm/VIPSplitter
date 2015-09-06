@@ -18,7 +18,7 @@
 //CONSTS
 const char version[] = "V1.0.0";
 
-//VARIABLES
+// ENUM & STRUCT
 enum exit_codes
 {
 	X_SUCCESS = 0,
@@ -38,8 +38,17 @@ typedef enum states
 	STATE_NULL
 } e_states;
 
+typedef struct files_t
+{
+	uint8_t header_saved;
+	char name[128];
+	FILE * filename;
+} files_t;
+
+//GLOBAL VARIABLES
 e_states main_state = STATE_INITIAL;
 uint8_t filenumber = 0;
+char temp_filename[] = "VIPSplitter_temp.tmp";
 
 char header[255] = "";
 char readline[255] = "";
@@ -48,20 +57,61 @@ char * charptr;
 unsigned long current_line = 0;
 
 FILE * file;
-
-typedef struct files_t
-{
-	uint8_t header_saved;
-	char name[128];
-	FILE * filename;
-} files_t;
-
+FILE * temp_file;
 files_t array[17];
 
 // PROTOTYPES
 void closeFiles();
 
 //FUNCTION START
+
+FILE * create_temp(FILE * temp)
+{
+	temp = fopen(temp_filename, "w+");
+	return temp;
+}
+
+int delete_temp(FILE * temp)
+{
+	int result = 0;
+	if (temp != NULL)
+	{
+		fclose(temp);
+		result = remove(temp_filename);
+	}
+	return result;
+}
+
+int write_temp(char * line, FILE * temp)
+{
+	int result = EOF;
+	if (temp != NULL)
+	{
+		result = fputs(line, temp);
+	}
+
+	return result;
+}
+
+int copy_temp(FILE * temp, FILE * file)
+{
+	int result = EOF;
+	char ch;
+
+	if ((temp != NULL) && (file != NULL))
+	{
+		fseek(temp, 0, SEEK_SET);			// move pointer to beginning of file
+		ch = fgetc(temp); 					// Start reading file
+		while (ch != EOF)
+		{
+			fputc(ch, file);
+			ch = fgetc(temp);
+		}
+		result = 0;
+	}
+
+	return result;
+}
 
 /**
  * \brief exit function
@@ -123,7 +173,7 @@ int stateChange(e_states new_state)
 		case STATE_COMMENT:
 			// COMMENT - COMMENT
 			// INITIAL - COMMENT
-			// TODO: Adicionar DATA - COMMENT (criacao de novos arquivos)
+			// DATA - COMMENT
 			if (main_state <= STATE_COMMENT)
 			{
 				main_state = STATE_COMMENT;
@@ -134,6 +184,11 @@ int stateChange(e_states new_state)
 				main_state = STATE_COMMENT;
 				filenumber++;
 				closeFiles();
+				temp_file = create_temp(temp_file);
+				if (temp_file == NULL)
+				{
+					puts("Unable to create temp file");
+				}
 				result = 1;
 			}
 			break;
@@ -197,6 +252,7 @@ int saveinFile(uint8_t pos, char * data)
 	{
 		if (!array[pos].header_saved)
 		{
+			copy_temp(temp_file, array[pos].filename);
 			fputs(header, array[pos].filename);
 			array[pos].header_saved = 1;
 		}
@@ -220,6 +276,7 @@ void closeFiles()
 		}
 		index++;
 	}
+	delete_temp(temp_file);
 }
 
 void handleData(char * data, char * origin_filename)
@@ -228,6 +285,7 @@ void handleData(char * data, char * origin_filename)
 	char temp[10];
 	uint8_t name_number;
 
+	//Creating file name
 	name_number = data[3] - '0';
 
 	if (name_number > 9)
@@ -251,7 +309,6 @@ void handleData(char * data, char * origin_filename)
 	}
 
 	int result = ptstr - name;
-	//fprintf(stderr, "result %d\r\n", result);
 
 	int index = strlen(temp);
 	index += result;
@@ -266,9 +323,7 @@ void handleData(char * data, char * origin_filename)
 	}
 	name[result] = '\0';
 
-/*	fprintf(stderr, "number: %d\r\n", name_number);
-	fprintf(stderr, "filename: %s\r\n", name);*/
-
+	// Now create file with filename and save on it
 	createFile(name_number, name);		// create file
 	saveinFile(name_number, data);		// store header/data
 
@@ -276,7 +331,7 @@ void handleData(char * data, char * origin_filename)
 
 
 int main(int argc, char * argv[]) {
-	printf ("VIPSplitter %s, a VIPMeter file splitter\r\n", version);
+	printf ("VIPSplitter %s, a VIPMeter file splitter\r\n\r\n", version);
 	if (argc != 2)						// Wrong number of input arguments
 	{
 		charptr = argv[0];
@@ -289,6 +344,11 @@ int main(int argc, char * argv[]) {
 	{
 		charptr = argv[1];
 		myexit(X_FAILFILEOPEN);
+	}
+	temp_file = create_temp(temp_file);
+	if (temp_file == NULL)
+	{
+		puts("Unable to create temp file");
 	}
 
 	charptr = argv[1];
@@ -318,6 +378,7 @@ int main(int argc, char * argv[]) {
 				{
 					myexit(X_FILERROR);
 				}
+				write_temp(readline, temp_file);
 
 			} else if(findString("Address", readline) == 0)
 			{
