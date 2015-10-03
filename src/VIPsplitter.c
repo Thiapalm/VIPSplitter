@@ -18,7 +18,7 @@
 //MACROS
 
 //CONSTS
-const char version[] = "V1.0.0";
+const char version[] = "V1.0.1";
 
 // ENUM & STRUCT
 enum exit_codes
@@ -228,10 +228,16 @@ int stateChange(e_states new_state)
     case STATE_DATA:
       // DATA - DATA
       // HEADER - DATA
+      // If state is INITIAL, keep it as INITIAL
       if ((main_state == STATE_HEADER) || (main_state == STATE_DATA))
       {
         main_state = STATE_DATA;
         result = 1;
+      }
+      if (main_state == STATE_INITIAL)
+      {
+          main_state = STATE_INITIAL;
+          result = 1;
       }
       break;
     case STATE_INITIAL:
